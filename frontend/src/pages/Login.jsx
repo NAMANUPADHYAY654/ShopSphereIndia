@@ -236,9 +236,9 @@ const Login = () => {
                   <input type="checkbox" className="h-4 w-4 rounded border-stone-300 text-stone-900 focus:ring-stone-400 dark:border-stone-600" />
                   Remember me
                 </label>
-                <button type="button" className="text-stone-900 hover:underline dark:text-white">
+                <Link to="/forgot-password" className="text-stone-900 hover:underline dark:text-white">
                   Forgot password?
-                </button>
+                </Link>
               </div>
 
               <motion.button

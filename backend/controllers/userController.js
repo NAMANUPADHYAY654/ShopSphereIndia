@@ -479,6 +479,152 @@ const getUsers = async (req, res, next) => {
   }
 };
 
+// @desc    Forgot password - send reset token to email
+// @route   POST /api/users/forgot-password
+// @access  Public
+const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    const normalizedEmail = normalizeEmail(email);
+
+    if (!normalizedEmail) {
+      res.status(400);
+      throw new Error('Email is required');
+    }
+
+    const user = await User.findOne({ email: normalizedEmail });
+
+    if (!user) {
+      res.status(200).json({ message: 'If an account with that email exists, a password reset link has been sent.' });
+      return;
+    }
+
+    if (user.googleId && !user.password) {
+      res.status(200).json({ message: 'If an account with that email exists, a password reset link has been sent.' });
+      return;
+    }
+
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    user.resetPasswordToken = hashedToken;
+    user.resetPasswordExpire = new Date(Date.now() + 60 * 60 * 1000);
+    await user.save();
+
+    const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+
+    const hasEmailConfig = process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS;
+
+    if (hasEmailConfig) {
+      const nodemailer = require('nodemailer');
+      const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: Number(process.env.SMTP_PORT || 587),
+        secure: String(process.env.SMTP_SECURE || 'false') === 'true',
+        auth: {
+          user: process.env.SMTP_USER,
+          pass: process.env.SMTP_PASS,
+        },
+      });
+
+      await transporter.sendMail({
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        to: user.email,
+        subject: 'ShopSphere India - Password Reset Request',
+        html: `
+          <div style="font-family:Arial,sans-serif;line-height:1.5;color:#111827">
+            <h2 style="margin:0 0 12px">Password Reset</h2>
+            <p style="margin:0 0 12px">Hi ${user.name || 'there'},</p>
+            <p style="margin:0 0 12px">You requested a password reset. Click the button below to reset your password:</p>
+            <a href="${resetUrl}" style="display:inline-block;padding:12px 24px;background:#111827;color:#fff;text-decoration:none;border-radius:12px;font-weight:600">Reset Password</a>
+            <p style="margin:16px 0 0;color:#6b7280">This link expires in 1 hour. If you did not request this, please ignore this email.</p>
+          </div>
+        `,
+      });
+    } else {
+      console.log(`[Password Reset] Token for ${user.email}: ${resetUrl}`);
+    }
+
+    res.status(200).json({
+      message: 'If an account with that email exists, a password reset link has been sent.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Reset password using token
+// @route   PUT /api/users/reset-password/:token
+// @access  Public
+const resetPassword = async (req, res, next) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+
+    if (!token || !password) {
+      res.status(400);
+      throw new Error('Token and password are required');
+    }
+
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      res.status(400);
+      throw new Error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+    }
+
+    if (!PASSWORD_REGEX.test(password)) {
+      res.status(400);
+      throw new Error('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character');
+    }
+
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await User.findOne({
+      resetPasswordToken: hashedToken,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+      res.status(400);
+      throw new Error('Invalid or expired reset token');
+    }
+
+    user.password = password;
+    user.resetPasswordToken = null;
+    user.resetPasswordExpire = null;
+    await user.save();
+
+    res.status(200).json({ message: 'Password has been reset successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// @desc    Delete user account
+// @route   DELETE /api/users/profile
+// @access  Private
+const deleteUserProfile = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      res.status(404);
+      throw new Error('User not found');
+    }
+
+    await OtpSession.deleteMany({ user: user._id });
+    await User.deleteOne({ _id: user._id });
+
+    res.cookie('jwt', '', {
+      httpOnly: true,
+      expires: new Date(0),
+    });
+
+    res.status(200).json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   authUser,
   registerUser,
@@ -489,4 +635,7 @@ module.exports = {
   getUserProfile,
   updateUserProfile,
   getUsers,
+  forgotPassword,
+  resetPassword,
+  deleteUserProfile,
 };
