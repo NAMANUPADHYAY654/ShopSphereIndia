@@ -5,6 +5,7 @@ const users = [
     password: 'password123',
     role: 'admin',
     phone: '9876543210',
+    isVerified: true,
   },
   {
     name: 'Aarav Sharma',
@@ -12,6 +13,7 @@ const users = [
     password: 'password123',
     role: 'user',
     phone: '9876543211',
+    isVerified: true,
   }
 ];
 

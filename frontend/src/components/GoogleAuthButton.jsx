@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
-import { Globe, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useGoogleAuthMutation } from '../redux/api/authApiSlice';
 
 const GOOGLE_SCRIPT_ID = 'google-identity-services-script';
 
-const GoogleAuthButton = ({ mode = 'signin', onSuccess }) => {
-  const [ready, setReady] = useState(false);
+const GoogleAuthButton = ({ onSuccess }) => {
   const [googleAuth, { isLoading }] = useGoogleAuthMutation();
+  const buttonDivRef = useRef(null);
   const callbackRef = useRef(null);
+  const [scriptLoaded, setScriptLoaded] = useState(false);
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
+  // Keep callback ref fresh
   useEffect(() => {
     callbackRef.current = async (response) => {
       try {
@@ -23,6 +25,7 @@ const GoogleAuthButton = ({ mode = 'signin', onSuccess }) => {
     };
   }, [googleAuth, onSuccess]);
 
+  // Load Google Identity Services script
   useEffect(() => {
     if (!clientId) return;
 
@@ -36,7 +39,7 @@ const GoogleAuthButton = ({ mode = 'signin', onSuccess }) => {
         cancel_on_tap_outside: true,
       });
 
-      setReady(true);
+      setScriptLoaded(true);
     };
 
     if (window.google?.accounts?.id) {
@@ -58,35 +61,54 @@ const GoogleAuthButton = ({ mode = 'signin', onSuccess }) => {
     script.onload = initGoogle;
     document.body.appendChild(script);
 
-    return () => {
-      script.onload = null;
-    };
+    return () => { script.onload = null; };
   }, [clientId]);
 
-  const handleClick = () => {
-    if (!clientId) {
-      toast.error('Set VITE_GOOGLE_CLIENT_ID to enable Google sign-in');
-      return;
-    }
+  // Render the official Google button once the script is loaded
+  useEffect(() => {
+    if (!scriptLoaded || !buttonDivRef.current || !window.google?.accounts?.id) return;
 
-    if (!ready) {
-      toast.error('Google sign-in is still loading');
-      return;
-    }
+    window.google.accounts.id.renderButton(buttonDivRef.current, {
+      type: 'standard',
+      theme: 'outline',
+      size: 'large',
+      text: 'continue_with',
+      shape: 'pill',
+      width: buttonDivRef.current.offsetWidth || 400,
+      logo_alignment: 'left',
+    });
+  }, [scriptLoaded]);
 
-    window.google.accounts.id.prompt();
-  };
+  // Fallback if no client ID configured
+  if (!clientId) {
+    return (
+      <button
+        type="button"
+        disabled
+        className="flex w-full items-center justify-center gap-3 rounded-2xl border border-stone-200 bg-stone-100 px-4 py-3 text-sm font-semibold text-stone-400 cursor-not-allowed dark:border-stone-700 dark:bg-stone-800 dark:text-stone-500"
+      >
+        Google Sign-In not configured
+      </button>
+    );
+  }
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      disabled={isLoading}
-      className="flex w-full items-center justify-center gap-3 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-stone-700 transition-colors hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-200 dark:hover:bg-stone-800"
-    >
-      {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Globe className="h-4 w-4" />}
-      Continue with Google
-    </button>
+    <div className="relative w-full flex items-center justify-center min-h-[44px]">
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white/70 rounded-2xl dark:bg-stone-900/70 z-10">
+          <Loader2 className="h-5 w-5 animate-spin text-stone-500" />
+        </div>
+      )}
+      {/* Google renders its own button here */}
+      <div ref={buttonDivRef} className="w-full" />
+      {/* Show placeholder while script loads */}
+      {!scriptLoaded && (
+        <div className="absolute inset-0 flex items-center justify-center gap-3 rounded-2xl border border-stone-200 bg-white text-sm font-semibold text-stone-500 dark:border-stone-700 dark:bg-stone-900 dark:text-stone-400">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading Google Sign-In...
+        </div>
+      )}
+    </div>
   );
 };
 

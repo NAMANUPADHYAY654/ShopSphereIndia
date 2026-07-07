@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, ShoppingBag, ShieldCheck, Smartphone, RotateCcw } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, ShoppingBag, ShieldCheck, RotateCcw } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setCredentials } from '../redux/slices/authSlice';
 import { useLoginMutation, useVerifyOtpMutation, useResendOtpMutation } from '../redux/api/authApiSlice';
@@ -12,7 +12,7 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [otpChannel, setOtpChannel] = useState('email');
+  const [otpChannel] = useState('email');
   const [step, setStep] = useState('credentials');
   const [otp, setOtp] = useState('');
   const [otpSessionId, setOtpSessionId] = useState('');
@@ -138,8 +138,8 @@ const Login = () => {
             </p>
             <div className="mt-8 space-y-3 text-sm text-stone-600 dark:text-stone-400">
               <div className="flex items-center gap-3"><ShieldCheck className="h-4 w-4 text-emerald-600" />Password + OTP verification</div>
-              <div className="flex items-center gap-3"><Smartphone className="h-4 w-4 text-emerald-600" />Email or mobile delivery</div>
-              <div className="flex items-center gap-3"><ShoppingBag className="h-4 w-4 text-emerald-600" />Cleaner, less crowded account screen</div>
+              <div className="flex items-center gap-3"><Mail className="h-4 w-4 text-emerald-600" />OTP sent to your email</div>
+              <div className="flex items-center gap-3"><ShoppingBag className="h-4 w-4 text-emerald-600" />Secure and simple access</div>
             </div>
           </div>
         </div>
@@ -209,25 +209,6 @@ const Login = () => {
                   >
                     {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                   </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-stone-300">Send OTP to</label>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { value: 'email', label: 'Email' },
-                    { value: 'phone', label: 'Mobile' },
-                  ].map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setOtpChannel(option.value)}
-                      className={`rounded-2xl border px-4 py-3 text-sm font-medium transition-colors ${otpChannel === option.value ? 'border-stone-900 bg-stone-900 text-white dark:border-white dark:bg-white dark:text-stone-950' : 'border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-300 dark:hover:bg-stone-900'}`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
                 </div>
               </div>
 

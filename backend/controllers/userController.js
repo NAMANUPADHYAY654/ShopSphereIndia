@@ -81,10 +81,9 @@ const createOtpSession = async ({ user, purpose, channel, destination }) => {
 // @access  Public
 const authUser = async (req, res, next) => {
   try {
-    const { email, password, otpChannel } = req.body;
+    const { email, password } = req.body;
     const normalizedEmail = normalizeEmail(email);
     const normalizedPassword = password ? password.trim() : '';
-    const requestedChannel = otpChannel === 'phone' ? 'phone' : 'email';
 
     const user = await User.findOne({ email: normalizedEmail });
 
@@ -98,23 +97,20 @@ const authUser = async (req, res, next) => {
       throw new Error('Please verify your account before signing in');
     }
 
-    const destination = requestedChannel === 'phone' && user.phone ? user.phone : user.email;
-    const channel = requestedChannel === 'phone' && user.phone ? 'phone' : 'email';
-
     const { session, delivery } = await createOtpSession({
       user,
       purpose: 'login',
-      channel,
-      destination,
+      channel: 'email',
+      destination: user.email,
     });
 
     res.status(200).json({
       otpRequired: true,
       otpSessionId: session._id,
-      channel,
-      destination: maskDestination(destination, channel),
+      channel: 'email',
+      destination: maskDestination(user.email, 'email'),
       deliveryMethod: delivery.deliveryMethod,
-      message: `We sent a one-time code to your ${channel === 'phone' ? 'mobile number' : 'email address'}.`,
+      message: `We sent a one-time code to your email address.`,
     });
   } catch (error) {
     next(error);
@@ -126,16 +122,18 @@ const authUser = async (req, res, next) => {
 // @access  Public
 const registerUser = async (req, res, next) => {
   try {
-    const { name, email, password, phone, otpChannel } = req.body;
+    const { name, email, password } = req.body;
     const normalizedEmail = normalizeEmail(email);
-    const normalizedPhone = normalizePhone(phone);
-    const requestedChannel = otpChannel === 'phone' ? 'phone' : 'email';
 
     const userExists = await User.findOne({ email: normalizedEmail });
 
     if (userExists) {
-      res.status(400);
-      throw new Error('User already exists');
+      if (userExists.isVerified === false) {
+        await User.deleteOne({ _id: userExists._id });
+      } else {
+        res.status(400);
+        throw new Error('User already exists');
+      }
     }
 
     if (!password || password.length < MIN_PASSWORD_LENGTH) {
@@ -152,33 +150,36 @@ const registerUser = async (req, res, next) => {
       name,
       email: normalizedEmail,
       password,
-      phone: normalizedPhone || null,
+      phone: null,
       isVerified: false,
       verifiedAt: null,
     });
 
-    const destination = requestedChannel === 'phone' && normalizedPhone ? normalizedPhone : normalizedEmail;
-    const channel = requestedChannel === 'phone' && normalizedPhone ? 'phone' : 'email';
+    try {
+      const { session, delivery } = await createOtpSession({
+        user,
+        purpose: 'register',
+        channel: 'email',
+        destination: normalizedEmail,
+      });
 
-    const { session, delivery } = await createOtpSession({
-      user,
-      purpose: 'register',
-      channel,
-      destination,
-    });
-
-    res.status(201).json({
-      otpRequired: true,
-      otpSessionId: session._id,
-      channel,
-      destination: maskDestination(destination, channel),
-      deliveryMethod: delivery.deliveryMethod,
-      message: `We sent a verification code to your ${channel === 'phone' ? 'mobile number' : 'email address'}.`,
-    });
+      res.status(201).json({
+        otpRequired: true,
+        otpSessionId: session._id,
+        channel: 'email',
+        destination: maskDestination(normalizedEmail, 'email'),
+        deliveryMethod: delivery.deliveryMethod,
+        message: `We sent a verification code to your email address.`,
+      });
+    } catch (otpError) {
+      await User.deleteOne({ _id: user._id });
+      throw otpError;
+    }
   } catch (error) {
     next(error);
   }
 };
+
 
 // @desc    Sign in or register with Google
 // @route   POST /api/users/google
@@ -192,13 +193,25 @@ const googleAuthUser = async (req, res, next) => {
       throw new Error('Google credential is required');
     }
 
-    const googleClient = getGoogleClient();
-    const ticket = await googleClient.verifyIdToken({
-      idToken: credential,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
+    let payload;
 
-    const payload = ticket.getPayload();
+    // Check for mock token in development mode
+    if (process.env.NODE_ENV === 'development' && credential === 'mock_development_google_token') {
+      payload = {
+        email: 'google-demo@shopsphere.local',
+        name: 'Google Demo User',
+        picture: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100',
+        sub: 'mock-google-id-1234567890',
+      };
+    } else {
+      const googleClient = getGoogleClient();
+      const ticket = await googleClient.verifyIdToken({
+        idToken: credential,
+        audience: process.env.GOOGLE_CLIENT_ID,
+      });
+
+      payload = ticket.getPayload();
+    }
 
     if (!payload || !payload.email) {
       res.status(400);

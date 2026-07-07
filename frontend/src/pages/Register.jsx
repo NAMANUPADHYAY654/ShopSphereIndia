@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, Eye, EyeOff, User, ArrowRight, ShoppingBag, CheckCircle, Smartphone, ShieldCheck, RotateCcw } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, User, ArrowRight, ShoppingBag, CheckCircle, ShieldCheck, RotateCcw } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { setCredentials } from '../redux/slices/authSlice';
 import { useRegisterMutation, useVerifyOtpMutation, useResendOtpMutation } from '../redux/api/authApiSlice';
@@ -11,11 +11,9 @@ import toast from 'react-hot-toast';
 const Register = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [otpChannel, setOtpChannel] = useState('email');
   const [step, setStep] = useState('details');
   const [otp, setOtp] = useState('');
   const [otpSessionId, setOtpSessionId] = useState('');
@@ -54,12 +52,8 @@ const Register = () => {
       toast.error('Password must be at least 6 characters');
       return;
     }
-    if (otpChannel === 'phone' && !phone.trim()) {
-      toast.error('Add a mobile number to verify by phone');
-      return;
-    }
     try {
-      const res = await registerApi({ name, email, phone, password, otpChannel }).unwrap();
+      const res = await registerApi({ name, email, password, otpChannel: 'email' }).unwrap();
 
       if (res.otpRequired) {
         setOtpSessionId(res.otpSessionId);
@@ -126,11 +120,11 @@ const Register = () => {
               Create your account with account verification.
             </h1>
             <p className="mt-4 text-base leading-7 text-stone-600 dark:text-stone-400">
-              New users verify with email or mobile OTP before the account is activated.
+              New users verify with an email OTP before the account is activated.
             </p>
             <div className="mt-8 space-y-3 text-sm text-stone-600 dark:text-stone-400">
               <div className="flex items-center gap-3"><ShieldCheck className="h-4 w-4 text-emerald-600" />Safer onboarding</div>
-              <div className="flex items-center gap-3"><Smartphone className="h-4 w-4 text-emerald-600" />Email or mobile OTP</div>
+              <div className="flex items-center gap-3"><Mail className="h-4 w-4 text-emerald-600" />Email OTP verification</div>
               <div className="flex items-center gap-3"><CheckCircle className="h-4 w-4 text-emerald-600" />Cleaner sign-up flow</div>
             </div>
           </div>
@@ -153,7 +147,7 @@ const Register = () => {
 
           <div className="mb-8">
             <h2 className="text-3xl font-semibold text-stone-900 dark:text-white">Create account</h2>
-            <p className="mt-2 text-stone-600 dark:text-stone-400">Join ShopSphere with email or mobile verification.</p>
+            <p className="mt-2 text-stone-600 dark:text-stone-400">Join ShopSphere with email verification.</p>
           </div>
 
           <div className="mb-5 space-y-3 rounded-3xl border border-stone-200 dark:border-stone-800 bg-white dark:bg-stone-900 p-5 shadow-sm">
@@ -197,20 +191,6 @@ const Register = () => {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-stone-300">Mobile Number</label>
-              <div className="relative">
-                <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-stone-400" />
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+91 98765 43210"
-                  className="w-full rounded-2xl border border-stone-200 bg-stone-50 py-3 pl-10 pr-4 text-stone-900 placeholder-stone-400 transition-all focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200 dark:border-stone-700 dark:bg-stone-950 dark:text-white dark:focus:ring-stone-700"
-                />
-              </div>
-            </div>
-
-            <div>
               <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-stone-300">Password</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-stone-400" />
@@ -238,25 +218,6 @@ const Register = () => {
                   <p className="text-xs text-stone-500">{strengthLabels[strength - 1] || 'Enter password'}</p>
                 </div>
               )}
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium text-stone-700 dark:text-stone-300">Verify by</label>
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { value: 'email', label: 'Email OTP' },
-                  { value: 'phone', label: 'Mobile OTP' },
-                ].map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setOtpChannel(option.value)}
-                    className={`rounded-2xl border px-4 py-3 text-sm font-medium transition-colors ${otpChannel === option.value ? 'border-stone-900 bg-stone-900 text-white dark:border-white dark:bg-white dark:text-stone-950' : 'border-stone-200 bg-stone-50 text-stone-700 hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-950 dark:text-stone-300 dark:hover:bg-stone-900'}`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
             </div>
 
             <div>
