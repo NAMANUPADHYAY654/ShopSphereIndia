@@ -41,6 +41,14 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  isVerified: {
+    type: Boolean,
+    default: true
+  },
+  verifiedAt: {
+    type: Date,
+    default: null
+  },
   phone: {
     type: String,
     default: null
