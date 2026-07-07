@@ -27,18 +27,25 @@ const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const logoutHandler = async () => {
+    setIsDropdownOpen(false);
+    setIsMobileOpen(false);
+    setIsLoggingOut(true);
+
     try {
       await logoutApiCall().unwrap();
+    } catch {
+      // ignore
+    }
+
+    setTimeout(() => {
       dispatch(logout());
-      setIsDropdownOpen(false);
+      setIsLoggingOut(false);
       toast.success('Logged out successfully');
       navigate('/');
-    } catch {
-      dispatch(logout());
-      navigate('/');
-    }
+    }, 1500);
   };
 
   const handleSearch = (e) => {
@@ -50,6 +57,35 @@ const Navbar = () => {
   };
 
   return (
+    <>
+    <AnimatePresence>
+      {isLoggingOut && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-white/80 dark:bg-stone-950/80 backdrop-blur-md"
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: 'spring', delay: 0.1, damping: 15 }}
+            className="flex flex-col items-center p-8 bg-white dark:bg-stone-900 rounded-3xl shadow-2xl border border-stone-100 dark:border-stone-800"
+          >
+            <div className="relative mb-6">
+              <div className="w-16 h-16 rounded-full border-4 border-stone-100 dark:border-stone-800" />
+              <div className="w-16 h-16 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin absolute top-0 left-0" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-xl">👋</span>
+              </div>
+            </div>
+            <h2 className="text-xl font-bold text-stone-900 dark:text-white mb-2 tracking-tight">Signing Out</h2>
+            <p className="text-sm text-stone-500 dark:text-stone-400 font-medium">See you next time!</p>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+
     <nav className="fixed w-full z-50 border-b border-stone-200 bg-white/90 backdrop-blur-sm transition-all duration-300 dark:border-stone-800 dark:bg-stone-950/90">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
@@ -319,6 +355,7 @@ const Navbar = () => {
         </AnimatePresence>
       </div>
     </nav>
+    </>
   );
 };
 
