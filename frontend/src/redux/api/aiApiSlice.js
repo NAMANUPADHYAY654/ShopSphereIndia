@@ -19,6 +19,9 @@ export const aiApiSlice = apiSlice.injectEndpoints({
     getFraudRadar: builder.query({
       query: () => '/ai/admin/fraud-radar',
     }),
+    getSecurityCenter: builder.query({
+      query: () => '/ai/admin/security-center',
+    }),
     getPricingRadar: builder.query({
       query: () => '/ai/admin/pricing-radar',
     }),
@@ -62,6 +65,7 @@ export const {
   useAdminCopilotMutation,
   useExecuteAdminActionMutation,
   useGetFraudRadarQuery,
+  useGetSecurityCenterQuery,
   useGetPricingRadarQuery,
   useGetWeeklyDigestQuery,
   useGetSellerHealthQuery,

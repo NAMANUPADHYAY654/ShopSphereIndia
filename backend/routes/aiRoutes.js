@@ -11,7 +11,8 @@ const {
   sellerHealth,
   draftRejection,
   supportTriage,
-  sentimentRadar
+  sentimentRadar,
+  securityCenter
 } = require('../controllers/aiController');
 const { protect, seller, admin } = require('../middleware/authMiddleware');
 
@@ -22,6 +23,7 @@ router.post('/summarize-reviews', summarizeReviews);
 router.post('/admin/copilot', protect, admin, adminCopilot);
 router.post('/admin/execute-action', protect, admin, executeAdminAction);
 router.get('/admin/fraud-radar', protect, admin, fraudRadar);
+router.get('/admin/security-center', protect, admin, securityCenter);
 router.get('/admin/pricing-radar', protect, admin, pricingRadar);
 router.get('/admin/weekly-digest', protect, admin, weeklyDigest);
 router.get('/admin/seller-health', protect, admin, sellerHealth);

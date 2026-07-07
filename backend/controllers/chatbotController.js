@@ -1,6 +1,22 @@
 const Product = require("../models/productModel");
 const Chat = require("../models/chatModel");
 
+const SHOPPING_KEYWORDS = [
+  'order', 'orders', 'product', 'products', 'price', 'prices', 'delivery', 'shipping',
+  'return', 'refund', 'exchange', 'cart', 'checkout', 'payment', 'coupon', 'discount',
+  'offer', 'wishlist', 'tracking', 'track', 'seller', 'complaint', 'account', 'login',
+  'register', 'login', 'otp', 'password', 'address', 'support', 'store', 'policy',
+];
+
+const looksLikeShoppingQuestion = (message = '') => {
+  const normalizedMessage = message.toLowerCase();
+  return SHOPPING_KEYWORDS.some((keyword) => normalizedMessage.includes(keyword));
+};
+
+const buildOutOfScopeReply = () => (
+  'I can help with ShopSphere shopping questions like products, orders, delivery, returns, payments, account access, and support. Please ask something related to the store.'
+);
+
 // ──────────────────────────────────────────────────────────────────
 // Multi-Provider AI Chatbot — Hugging Face → Grok → OpenAI → Gemini
 // Falls through providers until one responds successfully.
@@ -205,6 +221,13 @@ const generateChatResponse = async (req, res) => {
 
     if (!message || !message.trim()) {
       return res.status(400).json({ error: "Message is required" });
+    }
+
+    if (!looksLikeShoppingQuestion(message)) {
+      return res.json({
+        reply: buildOutOfScopeReply(),
+        provider: 'Policy',
+      });
     }
 
     // Fetch products for context

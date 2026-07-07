@@ -97,6 +97,7 @@ Respond ONLY with a valid JSON object in the exact following format:
 const User = require('../models/userModel');
 const Product = require('../models/productModel');
 const Order = require('../models/orderModel');
+const OtpSession = require('../models/otpSessionModel');
 
 // ... existing code ...
 
@@ -328,6 +329,155 @@ const sentimentRadar = async (req, res) => {
   }
 };
 
+const maskEmail = (email = '') => {
+  const [localPart, domainPart] = email.split('@');
+  if (!domainPart) return email;
+  return `${localPart.slice(0, 2)}***@${domainPart}`;
+};
+
+const maskPhone = (phone = '') => {
+  const digits = String(phone).replace(/\D/g, '');
+  if (digits.length <= 4) return '****';
+  return `****${digits.slice(-4)}`;
+};
+
+const securityCenter = async (req, res) => {
+  try {
+    const [users, orders, otpSessions] = await Promise.all([
+      User.find({}).select('name email role phone googleId isVerified createdAt').sort({ createdAt: -1 }).limit(200),
+      Order.find({}).select('user totalPrice paymentInfo orderStatus shippingInfo isPaid createdAt').sort({ createdAt: -1 }).limit(200),
+      OtpSession.find({}).select('user purpose channel destination attempts consumed expiresAt createdAt').sort({ createdAt: -1 }).limit(200),
+    ]);
+
+    const now = new Date();
+    const dayStart = (date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const last7Days = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - index));
+      const from = dayStart(date);
+      const to = new Date(from);
+      to.setDate(to.getDate() + 1);
+      return { label: from.toLocaleDateString('en-IN', { weekday: 'short' }), from, to };
+    });
+
+    const timeline = last7Days.map(({ label, from, to }) => ({
+      day: label,
+      orders: orders.filter((order) => order.createdAt >= from && order.createdAt < to).length,
+      otpChecks: otpSessions.filter((session) => session.createdAt >= from && session.createdAt < to).length,
+      newUsers: users.filter((user) => user.createdAt >= from && user.createdAt < to).length,
+    }));
+
+    const unverifiedUsers = users.filter((user) => !user.isVerified);
+    const googleLinkedUsers = users.filter((user) => Boolean(user.googleId)).length;
+    const activeOtpSessions = otpSessions.filter((session) => !session.consumed && session.expiresAt > now);
+    const riskyOtpSessions = otpSessions.filter((session) => !session.consumed && session.attempts >= 3);
+    const highValueOrders = orders.filter((order) => order.totalPrice >= 15000);
+    const codRiskOrders = orders.filter((order) => !order.isPaid && order.totalPrice >= 8000);
+
+    const alerts = [
+      ...unverifiedUsers.slice(0, 4).map((user, index) => ({
+        id: `user-${index + 1}`,
+        severity: 'Medium',
+        type: 'Account Verification',
+        title: `${user.name} needs verification`,
+        description: `Pending verification for ${maskEmail(user.email)}.`,
+        evidence: [
+          `Role: ${user.role}`,
+          `Contact: ${user.phone ? maskPhone(user.phone) : 'No phone on file'}`,
+        ],
+        recommendedAction: 'Send verification reminder',
+      })),
+      ...highValueOrders.slice(0, 4).map((order, index) => ({
+        id: `order-${index + 1}`,
+        severity: 'High',
+        type: 'High Value Order',
+        title: `Order ₹${Number(order.totalPrice).toLocaleString('en-IN')} requires review`,
+        description: `High-value order placed while payment is ${order.isPaid ? 'captured' : 'pending'}.`,
+        evidence: [
+          `Order total: ₹${Number(order.totalPrice).toLocaleString('en-IN')}`,
+          `Status: ${order.orderStatus}`,
+          `Payment: ${order.paymentInfo?.status || 'Unknown'}`,
+        ],
+        recommendedAction: 'Review order manually',
+      })),
+      ...riskyOtpSessions.slice(0, 4).map((session, index) => ({
+        id: `otp-${index + 1}`,
+        severity: 'High',
+        type: 'OTP Abuse',
+        title: `OTP session with ${session.attempts} failed attempts`,
+        description: `Repeated OTP failures for ${session.destination}.`,
+        evidence: [
+          `Channel: ${session.channel}`,
+          `Attempts: ${session.attempts}`,
+          `Expires: ${new Date(session.expiresAt).toLocaleString('en-IN')}`,
+        ],
+        recommendedAction: 'Throttle or block verification attempts',
+      })),
+      ...codRiskOrders.slice(0, 4).map((order, index) => ({
+        id: `cod-${index + 1}`,
+        severity: 'Medium',
+        type: 'Cash on Delivery Risk',
+        title: `COD order worth ₹${Number(order.totalPrice).toLocaleString('en-IN')}`,
+        description: 'Cash-on-delivery order above the risk threshold.',
+        evidence: [
+          `Order status: ${order.orderStatus}`,
+          `Payment captured: ${order.isPaid ? 'Yes' : 'No'}`,
+        ],
+        recommendedAction: 'Require additional confirmation',
+      })),
+    ];
+
+    const securityScore = Math.max(
+      40,
+      100 - (unverifiedUsers.length * 2) - (riskyOtpSessions.length * 4) - (codRiskOrders.length * 2)
+    );
+
+    const recentEvents = [
+      ...otpSessions.slice(0, 5).map((session) => ({
+        id: String(session._id),
+        type: session.purpose === 'register' ? 'Registration OTP' : 'Login OTP',
+        status: session.consumed ? 'Completed' : session.attempts > 0 ? 'In progress' : 'Pending',
+        detail: `${session.channel.toUpperCase()} • ${session.destination}`,
+        time: new Date(session.createdAt).toLocaleString('en-IN'),
+      })),
+      ...orders.slice(0, 5).map((order) => ({
+        id: String(order._id),
+        type: 'Order Monitor',
+        status: order.isPaid ? 'Paid' : 'Pending',
+        detail: `₹${Number(order.totalPrice).toLocaleString('en-IN')} • ${order.orderStatus}`,
+        time: new Date(order.createdAt).toLocaleString('en-IN'),
+      })),
+    ].slice(0, 8);
+
+    const controls = [
+      { name: 'Email / SMS verification coverage', value: `${users.length ? Math.round((users.filter((u) => u.isVerified).length / users.length) * 100) : 0}%` },
+      { name: 'Google sign-in adoption', value: `${users.length ? Math.round((googleLinkedUsers / users.length) * 100) : 0}%` },
+      { name: 'Active OTP sessions', value: String(activeOtpSessions.length) },
+      { name: 'High-value orders under watch', value: String(highValueOrders.length) },
+      { name: 'Admin security score', value: `${securityScore}/100` },
+    ];
+
+    res.json({
+      metrics: {
+        totalUsers: users.length,
+        verifiedUsers: users.filter((user) => user.isVerified).length,
+        googleLinkedUsers,
+        activeOtpSessions: activeOtpSessions.length,
+        suspiciousOrders: codRiskOrders.length + riskyOtpSessions.length,
+        highValueOrders: highValueOrders.length,
+        securityScore,
+      },
+      timeline,
+      alerts,
+      controls,
+      recentEvents,
+    });
+  } catch (error) {
+    console.error('Security Center Error:', error);
+    res.status(500).json({ error: 'Failed to load security center.' });
+  }
+};
+
 // @desc    Seller Onboarding Copilot
 // @route   POST /api/ai/seller/onboard-chat
 // @access  Public
@@ -380,6 +530,7 @@ module.exports = {
   draftRejection,
   supportTriage,
   sentimentRadar,
+  securityCenter,
   onboardingCopilot,
   autoCategorize
 };
