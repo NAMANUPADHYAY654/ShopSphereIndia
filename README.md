@@ -161,7 +161,19 @@ CLIENT_URL=http://localhost:5173
 CLIENT_URLS=http://localhost:5173
 RAZORPAY_KEY_ID=your_razorpay_key_id
 RAZORPAY_KEY_SECRET=your_razorpay_key_secret
+GOOGLE_CLIENT_ID=your_google_oauth_client_id
+SMTP_HOST=your_smtp_host
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your_smtp_user
+SMTP_PASS=your_smtp_password
+SMTP_FROM=ShopSphere India <no-reply@shopsphere.local>
+TWILIO_ACCOUNT_SID=your_twilio_account_sid
+TWILIO_AUTH_TOKEN=your_twilio_auth_token
+TWILIO_FROM_NUMBER=+15550000000
 ```
+
+If SMTP or Twilio credentials are not configured in development, OTP codes are printed to the backend terminal so you can still test the flow locally.
 
 Start the backend:
 
@@ -178,6 +190,8 @@ npm run dev
 ```
 
 The frontend runs on the Vite development server, typically at `http://localhost:5173`.
+
+If you want Google sign-in to work locally, add `VITE_GOOGLE_CLIENT_ID` to `frontend/.env` with the OAuth client id from your Google Cloud project.
 
 ## Seed Data
 

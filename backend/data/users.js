@@ -1,14 +1,14 @@
 const users = [
   {
-    name: 'Admin User',
-    email: 'admin@shopsphere.com',
+    name: 'Rohan Verma',
+    email: 'rohan.verma@shopsphere.in',
     password: 'password123',
     role: 'admin',
     phone: '9876543210',
   },
   {
-    name: 'John Doe',
-    email: 'john@example.com',
+    name: 'Aarav Sharma',
+    email: 'aarav.sharma@shopsphere.in',
     password: 'password123',
     role: 'user',
     phone: '9876543211',
