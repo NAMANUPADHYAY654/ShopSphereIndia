@@ -8,7 +8,7 @@ const otpSessionSchema = new mongoose.Schema({
   },
   purpose: {
     type: String,
-    enum: ['login', 'register'],
+    enum: ['login', 'register', 'password-reset'],
     required: true,
   },
   channel: {

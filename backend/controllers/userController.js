@@ -11,6 +11,8 @@ const {
 
 const OTP_EXPIRY_MINUTES = 10;
 const MAX_OTP_ATTEMPTS = 5;
+const MIN_PASSWORD_LENGTH = 8;
+const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 
 const normalizeEmail = (value) => (value || '').trim().toLowerCase();
 const normalizePhone = (value) => (value || '').replace(/[^\d+]/g, '').trim();
@@ -134,6 +136,16 @@ const registerUser = async (req, res, next) => {
     if (userExists) {
       res.status(400);
       throw new Error('User already exists');
+    }
+
+    if (!password || password.length < MIN_PASSWORD_LENGTH) {
+      res.status(400);
+      throw new Error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+    }
+
+    if (!PASSWORD_REGEX.test(password)) {
+      res.status(400);
+      throw new Error('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character');
     }
 
     const user = await User.create({
@@ -402,12 +414,31 @@ const updateUserProfile = async (req, res, next) => {
 
     if (user) {
       user.name = req.body.name || user.name;
-      user.email = req.body.email || user.email;
+      if (req.body.email) {
+        const normalizedNewEmail = normalizeEmail(req.body.email);
+        if (normalizedNewEmail !== user.email) {
+          const emailOwner = await User.findOne({ email: normalizedNewEmail });
+          if (emailOwner && emailOwner._id.toString() !== user._id.toString()) {
+            res.status(400);
+            throw new Error('Email is already in use');
+          }
+          user.email = normalizedNewEmail;
+          user.isVerified = false;
+        }
+      }
       user.phone = req.body.phone || user.phone;
       user.avatar = req.body.avatar || user.avatar;
       user.gstNumber = req.body.gstNumber || user.gstNumber;
 
       if (req.body.password) {
+        if (req.body.password.length < MIN_PASSWORD_LENGTH) {
+          res.status(400);
+          throw new Error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+        }
+        if (!PASSWORD_REGEX.test(req.body.password)) {
+          res.status(400);
+          throw new Error('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character');
+        }
         user.password = req.body.password;
       }
 
