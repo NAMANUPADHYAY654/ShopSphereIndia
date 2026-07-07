@@ -1,7 +1,15 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+function getInitialDarkMode() {
+  const stored = localStorage.getItem('darkMode');
+  if (stored !== null) {
+    return stored === 'true';
+  }
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+}
+
 const initialState = {
-  darkMode: localStorage.getItem('darkMode') !== 'false',
+  darkMode: getInitialDarkMode(),
 };
 
 const themeSlice = createSlice({
@@ -11,21 +19,11 @@ const themeSlice = createSlice({
     toggleTheme: (state) => {
       state.darkMode = !state.darkMode;
       localStorage.setItem('darkMode', state.darkMode);
-      if (state.darkMode) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
     },
     setTheme: (state, action) => {
       state.darkMode = action.payload;
       localStorage.setItem('darkMode', state.darkMode);
-      if (state.darkMode) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    }
+    },
   },
 });
 

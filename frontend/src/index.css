@@ -6,9 +6,10 @@
   body {
     @apply bg-stone-50 text-stone-900 transition-colors duration-300;
   }
-  
-  .dark body {
-    @apply bg-dark-bg text-dark-text;
+
+  .dark body,
+  body.dark {
+    @apply bg-stone-950 text-stone-100;
   }
 }
 

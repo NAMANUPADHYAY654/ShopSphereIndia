@@ -1,8 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { setTheme } from './redux/slices/themeSlice';
+import { useSelector } from 'react-redux';
 
 // Layouts
 import CustomerLayout from './components/layouts/CustomerLayout';
@@ -39,7 +38,6 @@ import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute';
 
 function App() {
-  const dispatch = useDispatch();
   const { darkMode } = useSelector((state) => state.theme);
 
   useEffect(() => {
@@ -52,7 +50,7 @@ function App() {
 
   return (
     <Router>
-      <div className={`min-h-screen ${darkMode ? 'dark' : ''}`}>
+      <div className="min-h-screen">
         <Toaster
           position="top-center"
           reverseOrder={false}
