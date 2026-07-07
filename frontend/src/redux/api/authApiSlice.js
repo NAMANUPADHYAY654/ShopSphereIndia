@@ -16,6 +16,27 @@ export const authApiSlice = apiSlice.injectEndpoints({
         body: data,
       }),
     }),
+    googleAuth: builder.mutation({
+      query: (data) => ({
+        url: '/users/google',
+        method: 'POST',
+        body: data,
+      }),
+    }),
+    verifyOtp: builder.mutation({
+      query: (data) => ({
+        url: '/users/otp/verify',
+        method: 'POST',
+        body: data,
+      }),
+    }),
+    resendOtp: builder.mutation({
+      query: (data) => ({
+        url: '/users/otp/resend',
+        method: 'POST',
+        body: data,
+      }),
+    }),
     logout: builder.mutation({
       query: () => ({
         url: '/users/logout',
@@ -35,6 +56,9 @@ export const authApiSlice = apiSlice.injectEndpoints({
 export const {
   useLoginMutation,
   useRegisterMutation,
+  useGoogleAuthMutation,
+  useVerifyOtpMutation,
+  useResendOtpMutation,
   useLogoutMutation,
   useProfileMutation,
 } = authApiSlice;
