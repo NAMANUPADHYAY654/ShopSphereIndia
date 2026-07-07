@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
-import { MapPin, CreditCard, CheckCircle, ChevronRight, Lock, Smartphone, Building2 } from 'lucide-react';
+import { MapPin, CreditCard, CheckCircle, ChevronRight, Lock, Smartphone, Building2, Shield, X } from 'lucide-react';
 import { saveShippingAddress, savePaymentMethod, clearCart } from '../redux/slices/cartSlice';
+import { useCreateOrderMutation, useCreateRazorpayOrderMutation, useVerifyPaymentMutation, useGetRazorpayConfigQuery } from '../redux/api/orderApiSlice';
 import toast from 'react-hot-toast';
 
 const STEPS = ['Shipping', 'Payment', 'Review'];
@@ -22,8 +23,15 @@ const Checkout = () => {
   const { userInfo } = useSelector((state) => state.auth);
 
   const [step, setStep] = useState(0);
-  const [placingOrder, setPlacingOrder] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [showDemoModal, setShowDemoModal] = useState(false);
+  const [demoStep, setDemoStep] = useState(0); // 0=choose, 1=processing, 2=success
+  const [pendingOrderData, setPendingOrderData] = useState(null);
+
+  const [createOrder, { isLoading: placingOrder }] = useCreateOrderMutation();
+  const [createRazorpayOrder] = useCreateRazorpayOrderMutation();
+  const [verifyPayment] = useVerifyPaymentMutation();
+  const { data: razorpayConfig } = useGetRazorpayConfigQuery();
 
   const [shipping, setShipping] = useState({
     fullName: userInfo?.name || '',
@@ -76,13 +84,130 @@ const Checkout = () => {
     setStep((s) => s + 1);
   };
 
+  const buildOrderData = () => ({
+    orderItems: cartItems.map((item) => ({
+      name: item.name,
+      quantity: item.qty,
+      image: item.image,
+      price: item.price,
+      product: item._id,
+    })),
+    shippingInfo: {
+      street: [shipping.addressLine1, shipping.addressLine2].filter(Boolean).join(', '),
+      city: shipping.city,
+      state: shipping.state,
+      pincode: shipping.pincode,
+      phone: shipping.phone,
+    },
+    paymentMethod,
+    itemsPrice,
+    shippingPrice,
+    taxPrice,
+    totalPrice,
+  });
+
+  // Load Razorpay script dynamically
+  const loadRazorpayScript = useCallback(() => {
+    return new Promise((resolve) => {
+      if (window.Razorpay) return resolve(true);
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  }, []);
+
+  const finishOrder = async (orderData, paymentResult) => {
+    try {
+      const createdOrder = await createOrder(orderData).unwrap();
+      // Verify payment and mark order as paid
+      await verifyPayment({
+        razorpay_order_id: paymentResult.razorpay_order_id,
+        razorpay_payment_id: paymentResult.razorpay_payment_id,
+        razorpay_signature: paymentResult.razorpay_signature,
+        orderId: createdOrder._id,
+        demoMode: paymentResult.demoMode || false,
+      }).unwrap();
+      dispatch(clearCart());
+      setOrderPlaced(true);
+      setShowDemoModal(false);
+    } catch (err) {
+      toast.error(err?.data?.message || err.error || 'Failed to place order');
+    }
+  };
+
   const handlePlaceOrder = async () => {
-    setPlacingOrder(true);
-    // Simulate order placement (would call backend API in production)
+    try {
+      const orderData = buildOrderData();
+
+      // Step 1: Create Razorpay order on backend
+      const rzpOrder = await createRazorpayOrder({ amount: totalPrice }).unwrap();
+
+      // Is it demo mode?
+      if (rzpOrder.demoMode) {
+        setPendingOrderData({ orderData, rzpOrder });
+        setDemoStep(0);
+        setShowDemoModal(true);
+        return;
+      }
+
+      // Step 2: Load Razorpay script
+      const loaded = await loadRazorpayScript();
+      if (!loaded) {
+        toast.error('Failed to load Razorpay. Check your internet.');
+        return;
+      }
+
+      // Step 3: Open real Razorpay checkout
+      const options = {
+        key: razorpayConfig?.keyId,
+        amount: rzpOrder.amount,
+        currency: rzpOrder.currency,
+        name: 'ShopSphere India',
+        description: `Order Payment - ${cartItems.length} item(s)`,
+        order_id: rzpOrder.id,
+        handler: async (response) => {
+          await finishOrder(orderData, {
+            razorpay_order_id: response.razorpay_order_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+          });
+        },
+        prefill: {
+          name: shipping.fullName,
+          email: userInfo?.email || '',
+          contact: shipping.phone,
+        },
+        theme: { color: '#4f46e5' },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', (response) => {
+        toast.error('Payment failed: ' + (response.error?.description || 'Unknown error'));
+      });
+      rzp.open();
+    } catch (err) {
+      toast.error(err?.data?.message || err.error || 'Payment initialization failed');
+    }
+  };
+
+  // Demo payment flow handler
+  const handleDemoPayment = async () => {
+    setDemoStep(1);
+    // Simulate processing
     await new Promise((r) => setTimeout(r, 2000));
-    dispatch(clearCart());
-    setOrderPlaced(true);
-    setPlacingOrder(false);
+    setDemoStep(2);
+    // Simulate verification delay
+    await new Promise((r) => setTimeout(r, 1000));
+    if (pendingOrderData) {
+      await finishOrder(pendingOrderData.orderData, {
+        razorpay_order_id: pendingOrderData.rzpOrder.id,
+        razorpay_payment_id: 'demo_pay_' + Date.now(),
+        razorpay_signature: 'demo_sig',
+        demoMode: true,
+      });
+    }
   };
 
   // Order Success Screen
@@ -134,6 +259,7 @@ const Checkout = () => {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950 py-8">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">Checkout</h1>
@@ -362,9 +488,9 @@ const Checkout = () => {
                   className="flex items-center space-x-2 px-8 py-3 bg-gradient-to-r from-emerald-500 to-primary-600 hover:from-emerald-600 hover:to-primary-700 text-white font-bold rounded-xl shadow-lg shadow-primary-500/25 transition-all disabled:opacity-70"
                 >
                   {placingOrder ? (
-                    <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /><span>Placing Order...</span></>
+                    <><div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /><span>Processing...</span></>
                   ) : (
-                    <><Lock className="w-4 h-4" /><span>Place Order · ₹{(totalPrice || 0).toLocaleString('en-IN')}</span></>
+                    <><Lock className="w-4 h-4" /><span>Pay ₹{(totalPrice || 0).toLocaleString('en-IN')}</span></>
                   )}
                 </motion.button>
               )}
@@ -416,6 +542,138 @@ const Checkout = () => {
         </div>
       </div>
     </div>
+
+    {/* ──── DEMO PAYMENT MODAL ──── */}
+    <AnimatePresence>
+      {showDemoModal && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+        >
+          <motion.div
+            initial={{ scale: 0.85, opacity: 0, y: 30 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.85, opacity: 0, y: 30 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+          >
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-white font-bold text-sm">Razorpay Payment Gateway</h3>
+                  <p className="text-blue-200 text-xs">Demo Mode — No real charges</p>
+                </div>
+              </div>
+              {demoStep === 0 && (
+                <button onClick={() => setShowDemoModal(false)} className="text-white/70 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+
+            {/* Body */}
+            <div className="p-6">
+              {demoStep === 0 && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                  {/* Amount Display */}
+                  <div className="text-center mb-6">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Amount to Pay</p>
+                    <p className="text-4xl font-black text-gray-900 dark:text-white">₹{(totalPrice || 0).toLocaleString('en-IN')}</p>
+                    <p className="text-xs text-gray-400 mt-1">ShopSphere India · {cartItems.length} item(s)</p>
+                  </div>
+
+                  {/* Demo Card */}
+                  <div className="bg-gradient-to-br from-gray-900 to-gray-700 rounded-2xl p-5 mb-5 text-white">
+                    <div className="flex justify-between items-start mb-8">
+                      <span className="text-xs font-medium opacity-80">DEMO CARD</span>
+                      <span className="text-sm font-bold">VISA</span>
+                    </div>
+                    <p className="font-mono text-lg tracking-widest mb-4">4111 •••• •••• 1111</p>
+                    <div className="flex justify-between text-xs">
+                      <div>
+                        <p className="opacity-60">CARD HOLDER</p>
+                        <p className="font-semibold">{shipping.fullName?.toUpperCase() || 'DEMO USER'}</p>
+                      </div>
+                      <div>
+                        <p className="opacity-60">EXPIRES</p>
+                        <p className="font-semibold">12/30</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Security Badge */}
+                  <div className="flex items-center justify-center space-x-2 mb-5">
+                    <Lock className="w-3.5 h-3.5 text-emerald-500" />
+                    <span className="text-xs text-gray-500">Secured with 256-bit SSL encryption</span>
+                  </div>
+
+                  {/* Pay Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                    onClick={handleDemoPayment}
+                    className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-2xl text-lg shadow-lg shadow-blue-500/30 transition-all"
+                  >
+                    Pay ₹{(totalPrice || 0).toLocaleString('en-IN')}
+                  </motion.button>
+
+                  <p className="text-center text-xs text-gray-400 mt-3">🧪 This is a demo. No real money will be charged.</p>
+                </motion.div>
+              )}
+
+              {demoStep === 1 && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-center py-8"
+                >
+                  <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-6" />
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Processing Payment...</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Verifying card and completing transaction</p>
+                  <div className="mt-4 flex items-center justify-center space-x-1">
+                    {[0, 1, 2].map((i) => (
+                      <motion.div
+                        key={i}
+                        className="w-2 h-2 bg-blue-600 rounded-full"
+                        animate={{ y: [0, -8, 0] }}
+                        transition={{ duration: 0.6, delay: i * 0.2, repeat: Infinity }}
+                      />
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
+              {demoStep === 2 && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="text-center py-8"
+                >
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', delay: 0.1 }}
+                    className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4"
+                  >
+                    <CheckCircle className="w-10 h-10 text-emerald-600" />
+                  </motion.div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Payment Successful! ✅</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">₹{(totalPrice || 0).toLocaleString('en-IN')} paid via Demo Card</p>
+                  <p className="text-xs text-gray-400 mt-2">Saving your order...</p>
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    </>
   );
 };
 
