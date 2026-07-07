@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { ShoppingCart, Heart, Sun, Moon, Search, Menu, X, Package, MapPin, MessageSquareWarning } from 'lucide-react';
+import { ShoppingCart, Heart, Sun, Moon, Search, Menu, X } from 'lucide-react';
 import { toggleTheme } from '../redux/slices/themeSlice';
 import { logout } from '../redux/slices/authSlice';
 import { useLogoutMutation } from '../redux/api/authApiSlice';
@@ -50,21 +50,21 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="fixed w-full z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200/50 dark:border-gray-700/50 transition-all duration-300">
+    <nav className="fixed w-full z-50 border-b border-stone-200 bg-white/90 backdrop-blur-sm transition-all duration-300 dark:border-stone-800 dark:bg-stone-950/90">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
 
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2 shrink-0">
-            <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-stone-900 dark:bg-white">
               <ShoppingCart className="w-5 h-5 text-white" />
             </div>
             <motion.span
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              className="text-xl font-black text-gray-900 dark:text-white hidden sm:block"
+              className="hidden text-xl font-semibold text-stone-900 dark:text-white sm:block"
             >
-              Shop<span className="text-primary-600">Sphere</span>
+              ShopSphere India
             </motion.span>
           </Link>
 
@@ -74,7 +74,7 @@ const Navbar = () => {
               <Link
                 key={link.label}
                 to={link.to}
-                className="px-4 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                className="rounded-lg px-4 py-2 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-100 hover:text-stone-900 dark:text-stone-300 dark:hover:bg-stone-900 dark:hover:text-white"
               >
                 {link.label}
               </Link>
@@ -90,7 +90,7 @@ const Navbar = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search products..."
-                className="w-full bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-xl py-2 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all"
+                className="w-full rounded-xl border border-stone-200 bg-stone-50 py-2 pl-9 pr-4 text-sm text-stone-900 transition-all focus:outline-none focus:ring-2 focus:ring-stone-200 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-100 dark:focus:ring-stone-700"
               />
             </div>
           </form>
@@ -100,21 +100,21 @@ const Navbar = () => {
             {/* Theme Toggle */}
             <button
               onClick={() => dispatch(toggleTheme())}
-              className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400"
+              className="rounded-xl p-2 text-stone-600 transition-colors hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-900"
             >
               {darkMode ? <Sun size={18} /> : <Moon size={18} />}
             </button>
 
             {/* Wishlist */}
-            <Link to="/wishlist" className="hidden md:flex p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400">
+            <Link to="/wishlist" className="hidden rounded-xl p-2 text-stone-600 transition-colors hover:bg-stone-100 md:flex dark:text-stone-400 dark:hover:bg-stone-900">
               <Heart size={18} />
             </Link>
 
             {/* Cart */}
-            <Link to="/cart" className="relative p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-gray-600 dark:text-gray-400">
+            <Link to="/cart" className="relative rounded-xl p-2 text-stone-600 transition-colors hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-stone-900">
               <ShoppingCart size={18} />
               {cartCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary-600 text-white text-xs flex items-center justify-center rounded-full font-bold">
+                <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-stone-900 text-xs font-bold text-white dark:bg-white dark:text-stone-950">
                   {cartCount > 9 ? '9+' : cartCount}
                 </span>
               )}
@@ -125,12 +125,12 @@ const Navbar = () => {
               <div className="relative">
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center space-x-2 px-3 py-1.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  className="flex items-center space-x-2 rounded-xl px-3 py-1.5 transition-colors hover:bg-stone-100 dark:hover:bg-stone-900"
                 >
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-stone-900 text-sm font-bold text-white dark:bg-white dark:text-stone-950">
                     {userInfo.name.charAt(0).toUpperCase()}
                   </div>
-                  <span className="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-300 max-w-[80px] truncate">
+                  <span className="hidden max-w-[80px] truncate text-sm font-medium text-stone-700 md:block dark:text-stone-300">
                     {userInfo.name.split(' ')[0]}
                   </span>
                 </button>
@@ -144,11 +144,11 @@ const Navbar = () => {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -10 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute right-0 mt-2 w-52 bg-white dark:bg-gray-800 rounded-2xl shadow-xl py-2 border border-gray-100 dark:border-gray-700 z-20"
+                        className="absolute right-0 z-20 mt-2 w-52 rounded-2xl border border-stone-200 bg-white py-2 shadow-xl dark:border-stone-800 dark:bg-stone-900"
                       >
-                        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-                          <p className="text-sm font-semibold text-gray-900 dark:text-white">{userInfo.name}</p>
-                          <p className="text-xs text-gray-500 truncate">{userInfo.email}</p>
+                        <div className="border-b border-stone-100 px-4 py-3 dark:border-stone-800">
+                          <p className="text-sm font-semibold text-stone-900 dark:text-white">{userInfo.name}</p>
+                          <p className="truncate text-xs text-stone-500">{userInfo.email}</p>
                         </div>
 
                         {userInfo.role === 'admin' ? (
@@ -156,16 +156,16 @@ const Navbar = () => {
                             <Link
                               to="/admin/dashboard"
                               onClick={() => setIsDropdownOpen(false)}
-                              className="block px-4 py-2.5 text-sm font-bold text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-colors"
+                              className="block px-4 py-2.5 text-sm font-semibold text-stone-900 transition-colors hover:bg-stone-50 dark:text-white dark:hover:bg-stone-800"
                             >
-                              ⚙️ AI Command Center
+                              Admin dashboard
                             </Link>
                             <Link
                               to="/profile"
                               onClick={() => setIsDropdownOpen(false)}
-                              className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                              className="block px-4 py-2.5 text-sm text-stone-700 transition-colors hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-800"
                             >
-                              👤 Admin Profile
+                              Profile
                             </Link>
                           </>
                         ) : userInfo.role === 'seller' ? (
@@ -173,23 +173,23 @@ const Navbar = () => {
                             <Link
                               to="/seller/dashboard"
                               onClick={() => setIsDropdownOpen(false)}
-                              className="block px-4 py-2.5 text-sm font-bold text-accent-600 dark:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-900/20 transition-colors"
+                              className="block px-4 py-2.5 text-sm font-semibold text-stone-900 transition-colors hover:bg-stone-50 dark:text-white dark:hover:bg-stone-800"
                             >
-                              🏬 Seller Dashboard
+                              Seller dashboard
                             </Link>
                             <Link
                               to="/profile"
                               onClick={() => setIsDropdownOpen(false)}
-                              className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                              className="block px-4 py-2.5 text-sm text-stone-700 transition-colors hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-800"
                             >
-                              👤 My Profile
+                              Profile
                             </Link>
                             <Link
                               to="/orders"
                               onClick={() => setIsDropdownOpen(false)}
-                              className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                              className="block px-4 py-2.5 text-sm text-stone-700 transition-colors hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-800"
                             >
-                              📦 Store Orders
+                              Orders
                             </Link>
                           </>
                         ) : (
@@ -197,54 +197,54 @@ const Navbar = () => {
                             <Link
                               to="/profile"
                               onClick={() => setIsDropdownOpen(false)}
-                              className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                              className="block px-4 py-2.5 text-sm text-stone-700 transition-colors hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-800"
                             >
-                              👤 My Profile
+                              Profile
                             </Link>
                             <Link
                               to="/orders"
                               onClick={() => setIsDropdownOpen(false)}
-                              className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                              className="block px-4 py-2.5 text-sm text-stone-700 transition-colors hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-800"
                             >
-                              📦 My Orders
+                              Orders
                             </Link>
                             <Link
                               to="/track"
                               onClick={() => setIsDropdownOpen(false)}
-                              className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                              className="block px-4 py-2.5 text-sm text-stone-700 transition-colors hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-800"
                             >
-                              🗺️ Track Package
+                              Track package
                             </Link>
                             <Link
                               to="/complaints"
                               onClick={() => setIsDropdownOpen(false)}
-                              className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                              className="block px-4 py-2.5 text-sm text-stone-700 transition-colors hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-800"
                             >
-                              📝 My Complaints
+                              Complaints
                             </Link>
                             <Link
                               to="/wishlist"
                               onClick={() => setIsDropdownOpen(false)}
-                              className="block px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                              className="block px-4 py-2.5 text-sm text-stone-700 transition-colors hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-800"
                             >
-                              ❤️ Wishlist
+                              Wishlist
                             </Link>
-                            <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
+                            <div className="my-1 border-t border-stone-100 dark:border-stone-800" />
                             <Link
                               to="/seller/onboard"
                               onClick={() => setIsDropdownOpen(false)}
-                              className="block px-4 py-2.5 text-sm font-bold text-accent-600 hover:bg-accent-50 dark:hover:bg-accent-900/20 transition-colors"
+                              className="block px-4 py-2.5 text-sm font-semibold text-stone-900 transition-colors hover:bg-stone-50 dark:text-white dark:hover:bg-stone-800"
                             >
-                              🏪 Become a Seller
+                              Become a seller
                             </Link>
                           </>
                         )}
-                        <div className="border-t border-gray-100 dark:border-gray-700 my-1" />
+                        <div className="my-1 border-t border-stone-100 dark:border-stone-800" />
                         <button
                           onClick={logoutHandler}
-                          className="block w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                          className="block w-full px-4 py-2.5 text-left text-sm text-rose-600 transition-colors hover:bg-rose-50 dark:hover:bg-rose-950/20"
                         >
-                          🚪 Sign Out
+                          Sign out
                         </button>
                       </motion.div>
                     </>
@@ -253,10 +253,10 @@ const Navbar = () => {
               </div>
             ) : (
               <div className="flex items-center space-x-2">
-                <Link to="/login" className="hidden md:block text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-primary-600 transition-colors px-3 py-2">
+                <Link to="/login" className="hidden px-3 py-2 text-sm font-medium text-stone-700 transition-colors hover:text-stone-900 md:block dark:text-stone-300 dark:hover:text-white">
                   Sign In
                 </Link>
-                <Link to="/register" className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-xl transition-colors shadow-sm shadow-primary-500/25">
+                <Link to="/register" className="rounded-xl bg-stone-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-stone-800 dark:bg-white dark:text-stone-950 dark:hover:bg-stone-200">
                   Get Started
                 </Link>
               </div>
@@ -265,7 +265,7 @@ const Navbar = () => {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMobileOpen(!isMobileOpen)}
-              className="lg:hidden p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
+              className="rounded-xl p-2 text-stone-700 hover:bg-stone-100 lg:hidden dark:text-stone-300 dark:hover:bg-stone-900"
             >
               {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
@@ -279,7 +279,7 @@ const Navbar = () => {
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="lg:hidden border-t border-gray-100 dark:border-gray-800 py-4 space-y-1"
+              className="space-y-1 border-t border-stone-100 py-4 lg:hidden dark:border-stone-800"
             >
               {/* Mobile Search */}
               <form onSubmit={handleSearch} className="mb-4">
@@ -290,7 +290,7 @@ const Navbar = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search products..."
-                    className="w-full bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-xl py-2.5 pl-9 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full rounded-xl border border-stone-200 bg-stone-50 py-2.5 pl-9 pr-4 text-sm text-stone-900 focus:outline-none focus:ring-2 focus:ring-stone-200 dark:border-stone-800 dark:bg-stone-900 dark:text-stone-100 dark:focus:ring-stone-700"
                   />
                 </div>
               </form>
@@ -299,7 +299,7 @@ const Navbar = () => {
                   key={link.label}
                   to={link.to}
                   onClick={() => setIsMobileOpen(false)}
-                  className="block px-4 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors"
+                  className="block rounded-xl px-4 py-2.5 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-stone-900"
                 >
                   {link.label}
                 </Link>

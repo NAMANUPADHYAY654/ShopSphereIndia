@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 transition-colors duration-300;
+    @apply bg-stone-50 text-stone-900 transition-colors duration-300;
   }
   
   .dark body {
@@ -13,20 +13,8 @@
 }
 
 @layer utilities {
-  .glass {
-    @apply bg-white bg-opacity-70 backdrop-blur-xl border border-white border-opacity-20 shadow-2xl;
-  }
-  
-  .dark .glass {
-    @apply bg-dark-card bg-opacity-40 backdrop-blur-xl border border-gray-800 border-opacity-50 shadow-[0_0_15px_rgba(168,85,247,0.1)];
-  }
-  
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-400 to-accent-500;
-  }
-  
-  .neon-glow {
-    @apply shadow-[0_0_15px_rgba(168,85,247,0.5)];
+  .surface-card {
+    @apply rounded-3xl border border-stone-200 bg-white shadow-sm dark:border-stone-800 dark:bg-stone-900;
   }
 }
 
@@ -38,11 +26,11 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded-full;
+  @apply bg-stone-300 rounded-full;
 }
 .dark ::-webkit-scrollbar-thumb {
-  @apply bg-gray-700;
+  @apply bg-stone-700;
 }
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-primary-500;
+  @apply bg-stone-500;
 }

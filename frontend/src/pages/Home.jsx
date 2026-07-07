@@ -44,21 +44,21 @@ const Home = () => {
           <div className="text-gray-900 dark:text-white">
             <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
               className="inline-flex items-center space-x-2 bg-white/50 dark:bg-dark-card/50 backdrop-blur-md rounded-full px-4 py-2 mb-6 border border-gray-200 dark:border-gray-800">
-              <span className="text-sm font-medium">🇮🇳 Elevating Indian E-commerce</span>
+              <span className="text-sm font-medium">🇮🇳 Built for Indian shoppers</span>
               <span className="w-1.5 h-1.5 bg-accent-500 rounded-full animate-pulse" />
-              <span className="text-sm text-accent-600 dark:text-accent-400 font-bold">Tech Powered</span>
+              <span className="text-sm text-accent-600 dark:text-accent-400 font-bold">Fast checkout</span>
             </motion.div>
 
             <motion.h1 initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
               className="text-5xl lg:text-7xl font-black leading-[1.1] mb-6 tracking-tight">
-              Experience the <br/>
-              <span className="text-gradient">Next Gen</span>
-              <br />of Shopping.
+              Shop Indian brands <br/>
+              <span className="text-gradient">with speed</span>
+              <br />and trust.
             </motion.h1>
 
             <motion.p initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
               className="text-lg text-gray-600 dark:text-gray-400 mb-8 max-w-lg leading-relaxed">
-              Discover premium products, curated by AI, delivered with speed. Join thousands of users in the future of retail.
+              Discover everyday essentials, festival gifts, and premium products curated for Indian homes, delivered with speed.
             </motion.p>
 
             <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
@@ -132,19 +132,19 @@ const Home = () => {
           {/* Repeat brands for smooth loop */}
           {[...Array(2)].map((_, i) => (
             <div key={i} className="flex space-x-12 items-center opacity-50 dark:opacity-40 font-black text-2xl tracking-widest text-gray-400">
-              <span>SONY</span>
+              <span>TATA</span>
               <span>•</span>
-              <span>NIKE</span>
+              <span>RELIANCE</span>
               <span>•</span>
-              <span>APPLE</span>
+              <span>BOAT</span>
               <span>•</span>
-              <span>SAMSUNG</span>
+              <span>HAVELLS</span>
               <span>•</span>
-              <span>ADIDAS</span>
+              <span>FASTRACK</span>
               <span>•</span>
-              <span>PUMA</span>
+              <span>DABUR</span>
               <span>•</span>
-              <span>ASUS</span>
+              <span>BATA</span>
               <span>•</span>
             </div>
           ))}

@@ -180,7 +180,7 @@ const Checkout = () => {
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {[
-                      { label: 'Full Name *', key: 'fullName', type: 'text', placeholder: 'John Doe', span: 1 },
+                      { label: 'Full Name *', key: 'fullName', type: 'text', placeholder: 'Aarav Sharma', span: 1 },
                       { label: 'Phone Number *', key: 'phone', type: 'tel', placeholder: '9876543210', span: 1 },
                       { label: 'Address Line 1 *', key: 'addressLine1', type: 'text', placeholder: 'House / Flat No., Street', span: 2 },
                       { label: 'Address Line 2', key: 'addressLine2', type: 'text', placeholder: 'Landmark, Area (optional)', span: 2 },

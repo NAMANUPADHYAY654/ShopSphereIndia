@@ -8,26 +8,26 @@ export default {
     extend: {
       colors: {
         primary: {
-          50: '#faf5ff',
-          100: '#f3e8ff',
-          400: '#c084fc',
-          500: '#a855f7',
-          600: '#9333ea',
-          900: '#581c87',
+          50: '#f8fafc',
+          100: '#f1f5f9',
+          400: '#94a3b8',
+          500: '#64748b',
+          600: '#475569',
+          900: '#0f172a',
         },
         accent: {
-          500: '#06b6d4', // Cyan for neon contrast
-          600: '#0891b2',
+          500: '#0f766e',
+          600: '#115e59',
         },
         dark: {
-          bg: '#0a0a0a', // Deep futuristic black
-          card: '#171717',
+          bg: '#09090b',
+          card: '#18181b',
           text: '#f8fafc',
-          border: '#262626'
+          border: '#27272a'
         }
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
+        sans: ['Inter', 'system-ui', 'sans-serif'],
       }
     },
   },
